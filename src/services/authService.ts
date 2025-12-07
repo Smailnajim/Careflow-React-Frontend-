@@ -1,12 +1,11 @@
 import type { RegisterFormValues } from '../interfaces/IRegisterFormValues';
 import type { LoginFormValues } from '../interfaces/ILoginFormValues';
-import type { AuthResponse, User, AuthTokens } from '../interfaces/IAuthResponse';
+import type { AuthResponse, User } from '../interfaces/IAuthResponse';
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
-// Token storage keys
+// Storage keys
 const ACCESS_TOKEN_KEY = 'accessToken';
-const REFRESH_TOKEN_KEY = 'refreshToken';
 const USER_KEY = 'user';
 
 /**
@@ -18,6 +17,7 @@ export async function register(data: RegisterFormValues): Promise<AuthResponse> 
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'include', // Send cookies
         body: JSON.stringify(data),
     });
 
@@ -27,9 +27,9 @@ export async function register(data: RegisterFormValues): Promise<AuthResponse> 
         throw new Error(result.errors.errors?.[0]?.msg || 'Registration failed');
     }
 
-    // Store tokens if returned
-    if (result.tokens) {
-        storeTokens(result.tokens);
+    // Store access token (refresh token is in httpOnly cookie)
+    if (result.accessToken) {
+        storeAccessToken(result.accessToken);
     }
     if (result.user) {
         storeUser(result.user);
@@ -47,6 +47,7 @@ export async function login(data: LoginFormValues): Promise<AuthResponse> {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'include', // Send cookies
         body: JSON.stringify(data),
     });
 
@@ -56,9 +57,9 @@ export async function login(data: LoginFormValues): Promise<AuthResponse> {
         throw new Error(result.errors.errors?.[0]?.msg || 'Login failed');
     }
 
-    // Store tokens
-    if (result.tokens) {
-        storeTokens(result.tokens);
+    // Store access token (refresh token is in httpOnly cookie)
+    if (result.accessToken) {
+        storeAccessToken(result.accessToken);
     }
     if (result.user) {
         storeUser(result.user);
@@ -68,43 +69,37 @@ export async function login(data: LoginFormValues): Promise<AuthResponse> {
 }
 
 /**
- * Refresh tokens
+ * Refresh access token (refresh token is sent automatically via httpOnly cookie)
  */
-export async function refreshTokens(): Promise<AuthTokens> {
-    const refreshToken = getRefreshToken();
-
-    if (!refreshToken) {
-        throw new Error('No refresh token available');
-    }
-
+export async function refreshTokens(): Promise<string> {
     const response = await fetch(`${API_BASE_URL}/users/refresh`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ refreshToken }),
+        credentials: 'include', // This sends the httpOnly cookie automatically
     });
 
     const result = await response.json();
 
-    if (result.errors) {
-        clearTokens();
+    if (result.errors || !response.ok) {
+        clearAuth();
         throw new Error('Session expired. Please login again.');
     }
 
-    if (result.tokens) {
-        storeTokens(result.tokens);
+    // Store new access token
+    if (result.accessToken) {
+        storeAccessToken(result.accessToken);
     }
 
-    return result.tokens;
+    return result.accessToken;
 }
 
 /**
- * Store tokens in localStorage
+ * Store access token in localStorage
  */
-function storeTokens(tokens: AuthTokens): void {
-    localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+function storeAccessToken(token: string): void {
+    localStorage.setItem(ACCESS_TOKEN_KEY, token);
 }
 
 /**
@@ -119,13 +114,6 @@ function storeUser(user: User): void {
  */
 export function getAccessToken(): string | null {
     return localStorage.getItem(ACCESS_TOKEN_KEY);
-}
-
-/**
- * Get refresh token
- */
-export function getRefreshToken(): string | null {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
 /**
@@ -146,9 +134,8 @@ export function getStoredUser(): User | null {
 /**
  * Clear all auth data (logout)
  */
-export function clearTokens(): void {
+export function clearAuth(): void {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
 }
 

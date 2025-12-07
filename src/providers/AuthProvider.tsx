@@ -1,7 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import type { User } from '../interfaces/IAuthResponse';
-import { getStoredUser, clearTokens } from '../services/authService';
+import { getStoredUser, clearAuth } from '../services/authService';
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     const logout = () => {
-        clearTokens();
+        clearAuth();
         setUser(null);
     };
 
