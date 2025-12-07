@@ -1,6 +1,6 @@
 import type { RegisterFormValues } from '../interfaces/IRegisterFormValues';
 import type { LoginFormValues } from '../interfaces/ILoginFormValues';
-import type { AuthResponse, User } from '../interfaces/IAuthResponse';
+import type { User } from '../interfaces/IAuthResponse';
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
@@ -9,15 +9,34 @@ const ACCESS_TOKEN_KEY = 'accessToken';
 const USER_KEY = 'user';
 
 /**
- * Register a new user
+ * Decode JWT token to extract user data from payload
  */
-export async function register(data: RegisterFormValues): Promise<AuthResponse> {
+function decodeToken(token: string): User | null {
+    try {
+        const base64Payload = token.split('.')[1];
+        const payload = JSON.parse(atob(base64Payload));
+        return {
+            id: payload.id || payload.sub || payload.userId,
+            firstName: payload.firstName || payload.first_name || '',
+            lastName: payload.lastName || payload.last_name || '',
+            email: payload.email || '',
+        };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Register a new user - returns { valid: user } on success
+ * User should be redirected to login after registration
+ */
+export async function register(data: RegisterFormValues): Promise<{ valid: boolean }> {
     const response = await fetch(`${API_BASE_URL}/users/register`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        credentials: 'include', // Send cookies
+        credentials: 'include',
         body: JSON.stringify(data),
     });
 
@@ -27,45 +46,39 @@ export async function register(data: RegisterFormValues): Promise<AuthResponse> 
         throw new Error(result.errors.errors?.[0]?.msg || 'Registration failed');
     }
 
-    // Store access token (refresh token is in httpOnly cookie)
-    if (result.accessToken) {
-        storeAccessToken(result.accessToken);
-    }
-    if (result.user) {
-        storeUser(result.user);
-    }
-
-    return result;
+    return { valid: !!result.valid };
 }
 
 /**
- * Login user
+ * Login user - returns { accessToken } and sets httpOnly cookie for refresh token
  */
-export async function login(data: LoginFormValues): Promise<AuthResponse> {
+export async function login(data: LoginFormValues): Promise<{ accessToken: string; user: User | null }> {
     const response = await fetch(`${API_BASE_URL}/users/login`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        credentials: 'include', // Send cookies
+        credentials: 'include',
         body: JSON.stringify(data),
     });
 
     const result = await response.json();
 
-    if (result.errors) {
-        throw new Error(result.errors.errors?.[0]?.msg || 'Login failed');
+    if (result.errors || result.error) {
+        throw new Error(result.errors?.errors?.[0]?.msg || result.error || 'Login failed');
     }
 
-    // Store access token (refresh token is in httpOnly cookie)
+    let user: User | null = null;
+
     if (result.accessToken) {
         storeAccessToken(result.accessToken);
-    }
-    if (result.user) {
-        storeUser(result.user);
+        user = decodeToken(result.accessToken);
+        if (user) {
+            storeUser(user);
+        }
     }
 
-    return result;
+    return { accessToken: result.accessToken, user };
 }
 
 /**
@@ -77,7 +90,7 @@ export async function refreshTokens(): Promise<string> {
         headers: {
             'Content-Type': 'application/json',
         },
-        credentials: 'include', // This sends the httpOnly cookie automatically
+        credentials: 'include',
     });
 
     const result = await response.json();
@@ -87,9 +100,12 @@ export async function refreshTokens(): Promise<string> {
         throw new Error('Session expired. Please login again.');
     }
 
-    // Store new access token
     if (result.accessToken) {
         storeAccessToken(result.accessToken);
+        const user = decodeToken(result.accessToken);
+        if (user) {
+            storeUser(user);
+        }
     }
 
     return result.accessToken;

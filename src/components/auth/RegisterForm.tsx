@@ -5,13 +5,11 @@ import { useNavigate } from "react-router-dom";
 import type { RegisterFormValues } from "../../interfaces/IRegisterFormValues";
 import { registerSchema } from "../../yup/Schema/registerSchema";
 import { register as registerUser } from "../../services/authService";
-import { useAuth } from "../../contexts/AuthContext";
 
 export default function RegisterForm() {
     const [apiError, setApiError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-    const { login } = useAuth();
 
     const {
         register,
@@ -27,9 +25,9 @@ export default function RegisterForm() {
 
         try {
             const response = await registerUser(data);
-            if (response.user) {
-                login(response.user);
-                navigate('/');
+            if (response.valid) {
+                // Redirect to login page after successful registration
+                navigate('/login');
             }
         } catch (error) {
             setApiError(error instanceof Error ? error.message : 'Registration failed');
