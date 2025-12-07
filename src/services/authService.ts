@@ -1,6 +1,6 @@
 import type { RegisterFormValues } from '../interfaces/IRegisterFormValues';
 import type { LoginFormValues } from '../interfaces/ILoginFormValues';
-import type { User } from '../interfaces/IAuthResponse';
+import type { User, UserRole } from '../interfaces/IAuthResponse';
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
@@ -20,6 +20,7 @@ function decodeToken(token: string): User | null {
             firstName: payload.firstName || payload.first_name || '',
             lastName: payload.lastName || payload.last_name || '',
             email: payload.email || '',
+            role: payload.role || 'patient',
         };
     } catch {
         return null;
@@ -27,8 +28,25 @@ function decodeToken(token: string): User | null {
 }
 
 /**
+ * Get dashboard URL based on user role
+ */
+export function getDashboardUrl(role: UserRole): string {
+    switch (role) {
+        case 'admin':
+            return '/admin/dashboard';
+        case 'medecin':
+            return '/medecin/dashboard';
+        case 'patient':
+            return '/patient/dashboard';
+        case 'laboratoire':
+            return '/laboratoire/dashboard';
+        default:
+            return '/';
+    }
+}
+
+/**
  * Register a new user - returns { valid: user } on success
- * User should be redirected to login after registration
  */
 export async function register(data: RegisterFormValues): Promise<{ valid: boolean }> {
     const response = await fetch(`${API_BASE_URL}/users/register`, {

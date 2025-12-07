@@ -1,8 +1,11 @@
+export type UserRole = 'admin' | 'medecin' | 'patient' | 'laboratoire';
+
 export interface User {
     id: string;
     firstName: string;
     lastName: string;
     email: string;
+    role: UserRole;
 }
 
 export interface AuthTokens {

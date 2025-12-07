@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { LoginFormValues } from "../../interfaces/ILoginFormValues";
 import { loginSchema } from "../../yup/Schema/loginSchema";
-import { login as loginUser } from "../../services/authService";
+import { login as loginUser, getDashboardUrl } from "../../services/authService";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginForm() {
@@ -29,7 +29,9 @@ export default function LoginForm() {
             const response = await loginUser(data);
             if (response.user) {
                 login(response.user);
-                navigate('/');
+                // Redirect to role-based dashboard
+                const dashboardUrl = getDashboardUrl(response.user.role);
+                navigate(dashboardUrl);
             }
         } catch (error) {
             setApiError(error instanceof Error ? error.message : 'Login failed');
