@@ -23,7 +23,7 @@ export default function AdminDashboard() {
                     <p>Email: {user?.email}</p>
                 </div>
                 <div style={styles.grid}>
-                    <div style={styles.card}>
+                    <div style={{ ...styles.card, cursor: 'pointer' }} onClick={() => navigate('/admin/users')}>
                         <h3>Users Management</h3>
                         <p>Manage all system users</p>
                     </div>
