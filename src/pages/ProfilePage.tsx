@@ -19,6 +19,7 @@ export default function ProfilePage() {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 email: user.email,
+                phone: user.phone,
             });
         }
     }, [user]);
@@ -37,13 +38,24 @@ export default function ProfilePage() {
 
         try {
             const updatedUser = await updateUser(user.id, formData);
-            // Update local user data
+
+            // Update form with new data from server
+            setFormData({
+                firstName: updatedUser.firstName,
+                lastName: updatedUser.lastName,
+                email: updatedUser.email,
+                phone: updatedUser.phone || '',
+            });
+
+            // Update auth context user data
             setUser({
                 ...user,
                 firstName: updatedUser.firstName || user.firstName,
                 lastName: updatedUser.lastName || user.lastName,
                 email: updatedUser.email || user.email,
+                phone: updatedUser.phone
             });
+
             setSuccess('Profile updated successfully!');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to update profile');
@@ -189,5 +201,9 @@ const styles: Record<string, React.CSSProperties> = {
     saveBtn: {
         width: '100%', padding: '0.875rem', backgroundColor: '#4f46e5', color: 'white',
         border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer'
+    },
+    loading: {
+        display: 'flex', justifyContent: 'center', alignItems: 'center',
+        minHeight: '100vh', fontSize: '1.2rem', color: '#666'
     },
 };

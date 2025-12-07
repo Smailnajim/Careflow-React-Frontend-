@@ -6,6 +6,7 @@ export interface User {
     lastName: string;
     email: string;
     role: UserRole;
+    phone?: string;
 }
 
 export interface AuthTokens {
