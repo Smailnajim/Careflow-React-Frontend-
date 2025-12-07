@@ -2,7 +2,7 @@ import type { RegisterFormValues } from '../interfaces/IRegisterFormValues';
 import type { LoginFormValues } from '../interfaces/ILoginFormValues';
 import type { AuthResponse, User, AuthTokens } from '../interfaces/IAuthResponse';
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 // Token storage keys
 const ACCESS_TOKEN_KEY = 'accessToken';
