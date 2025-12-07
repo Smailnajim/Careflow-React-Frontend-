@@ -2,12 +2,12 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { RegisterFormValues } from "../../interfaces/IRegisterFormValues";
-import { registerSchema } from "../../yup/Schema/registerSchema";
-import { register as registerUser } from "../../services/authService";
+import type { LoginFormValues } from "../../interfaces/ILoginFormValues";
+import { loginSchema } from "../../yup/Schema/loginSchema";
+import { login as loginUser } from "../../services/authService";
 import { useAuth } from "../../contexts/AuthContext";
 
-export default function RegisterForm() {
+export default function LoginForm() {
     const [apiError, setApiError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
@@ -17,22 +17,22 @@ export default function RegisterForm() {
         register,
         handleSubmit,
         formState: { errors }
-    } = useForm<RegisterFormValues>({
-        resolver: yupResolver(registerSchema)
+    } = useForm<LoginFormValues>({
+        resolver: yupResolver(loginSchema)
     });
 
-    const onSubmit = async (data: RegisterFormValues) => {
+    const onSubmit = async (data: LoginFormValues) => {
         setApiError(null);
         setIsLoading(true);
 
         try {
-            const response = await registerUser(data);
+            const response = await loginUser(data);
             if (response.user) {
                 login(response.user);
                 navigate('/');
             }
         } catch (error) {
-            setApiError(error instanceof Error ? error.message : 'Registration failed');
+            setApiError(error instanceof Error ? error.message : 'Login failed');
         } finally {
             setIsLoading(false);
         }
@@ -40,33 +40,9 @@ export default function RegisterForm() {
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} style={styles.form}>
-            <h2 style={styles.title}>Create Account</h2>
+            <h2 style={styles.title}>Welcome Back</h2>
 
             {apiError && <div style={styles.error}>{apiError}</div>}
-
-            <div style={styles.inputGroup}>
-                <label htmlFor="firstName" style={styles.label}>First Name</label>
-                <input
-                    id="firstName"
-                    type="text"
-                    {...register("firstName")}
-                    style={styles.input}
-                    placeholder="Enter your first name"
-                />
-                {errors.firstName && <span style={styles.fieldError}>{errors.firstName.message}</span>}
-            </div>
-
-            <div style={styles.inputGroup}>
-                <label htmlFor="lastName" style={styles.label}>Last Name</label>
-                <input
-                    id="lastName"
-                    type="text"
-                    {...register("lastName")}
-                    style={styles.input}
-                    placeholder="Enter your last name"
-                />
-                {errors.lastName && <span style={styles.fieldError}>{errors.lastName.message}</span>}
-            </div>
 
             <div style={styles.inputGroup}>
                 <label htmlFor="email" style={styles.label}>Email</label>
@@ -87,18 +63,18 @@ export default function RegisterForm() {
                     type="password"
                     {...register("password")}
                     style={styles.input}
-                    placeholder="Enter your password (min 6 characters)"
+                    placeholder="Enter your password"
                 />
                 {errors.password && <span style={styles.fieldError}>{errors.password.message}</span>}
             </div>
 
             <button type="submit" disabled={isLoading} style={styles.button}>
-                {isLoading ? 'Creating Account...' : 'Register'}
+                {isLoading ? 'Signing in...' : 'Login'}
             </button>
 
             <p style={styles.linkText}>
-                Already have an account?{' '}
-                <a href="/login" style={styles.link}>Login here</a>
+                Don't have an account?{' '}
+                <a href="/register" style={styles.link}>Register here</a>
             </p>
         </form>
     );
